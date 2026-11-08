@@ -325,7 +325,9 @@ hud();requestAnimationFrame(frame);
 const TRK=[
  {n:"XTAL",f:"music/Track1.mp3"},
  {n:"HEAVEN'S NIGHT",f:"music/Track2.mp3"},
- {n:"THE REVERSE WILL",f:"music/Track3.mp3"}
+ {n:"THE REVERSE WILL",f:"music/Track3.mp3"},
+ {n:"BLUE CALX",f:"music/Track4.mp3"},
+ {n:"NULL MOON",f:"music/Track5.mp3"}
 ];
 (()=>{const mus=document.getElementById("mus");let i=0,paused=false,started=false,vol=.5,muted=false,names={},spd={};const au=new Audio();au.preload="metadata";
 try{const s=JSON.parse(localStorage.getItem("driftmus")||"{}");if(s.v!=null)vol=s.v;muted=!!s.m;paused=!!s.p;names=JSON.parse(localStorage.getItem("drifttn")||"{}");spd=JSON.parse(localStorage.getItem("driftspd")||"{}")}catch(e){}
