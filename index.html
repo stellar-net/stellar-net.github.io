@@ -90,6 +90,7 @@ function die(why){say(`✕ ${why} · cargo lost · respawned at port`);S.inv.fil
 function crash(){if(portD()>350&&astNear(S.x,S.y,7).length)return die("hit an asteroid");for(const s of sysList(S.x,S.y,0))if(Math.hypot(S.x-s.x,S.y-s.y)<s.sr)return die("burned up in a star");}
 function mv(b,tx,ty,stop,dt){const d=Math.hypot(tx-b.x,ty-b.y);if(d<=stop)return 1;const ux=(tx-b.x)/d,uy=(ty-b.y)/d;let ax=tx,ay=ty,bt=1e9,av=0;
 for(const s of sysList(b.x,b.y,d)){const wx=s.x-b.x,wy=s.y-b.y,t=wx*ux+wy*uy,o=wy*ux-wx*uy,sf=s.sr+140;if(t>0&&t<d&&Math.abs(o)<sf&&t<bt){bt=t;const g=o>=0?1:-1;ax=s.x+uy*g*(sf+80);ay=s.y-ux*g*(sf+80);av=1}}
+for(const a of astIn(b.x,b.y,1300)){const tt=Math.hypot(a.x-b.x,a.y-b.y)/200,qx=a.x+a.dx*a.sp*tt,qy=a.y+a.dy*a.sp*tt,wx=qx-b.x,wy=qy-b.y,t=wx*ux+wy*uy,o=wy*ux-wx*uy,sf=a.r+110;if(t>0&&t<Math.min(d,1300)&&Math.abs(o)<sf&&t<bt){bt=t;const g=o>=0?1:-1;ax=qx+uy*g*(sf+60);ay=qy-ux*g*(sf+60);av=1}}
 const dd=Math.hypot(ax-b.x,ay-b.y)||1,lim=av?dd:d-stop,s=Math.min(200*dt,lim);b.vx=(ax-b.x)/dd*200;b.vy=(ay-b.y)/dd*200;b.x+=(ax-b.x)/dd*s;b.y+=(ay-b.y)/dd*s;b.fuel=100;return !av&&s>=lim-1e-6}
 function botStep(b,dt){if(b.ty=="del")return delStep(b,dt);const g=S.seen[b.tg],hp=S.ports[b.pt||0]||S.ports[0];
 if(b.st=="idle"){b.fuel=100;if(g)b.st="out";return}
@@ -105,7 +106,7 @@ function away(sec,boot){sec=Math.min(sec,43200);if(sec<5)return;if(!boot)for(con
 if(sec>60||boot)say(`away ${sec/3600|0}h ${sec%3600/60|0}m · bots +$${S.cash-c0} · colonies +${Math.round(Object.values(S.col).reduce((a,c)=>a+sm(c.s),0)-u0)} units · industry +$${pw}`);S.cash+=pw}
 function save(){if(nosave)return;try{for(const c in cache)sv(cache[c]);localStorage.setItem("drift1",JSON.stringify({cash:S.cash,fuel:S.fuel,inv:S.inv,x:S.x,y:S.y,a:S.a,col:S.col,bots:S.bots,depl:S.depl,seen:S.seen,nb:S.nb,ports:S.ports,names:S.names,ind:S.ind,t:Date.now()}))}catch(e){}}
 function tick(dt){msTick(dt);indTick(dt);for(const b of S.bots)botStep(b,dt);
-S.bots=S.bots.filter(b=>{if(["out","back","dgo","dback"].includes(b.st)&&astNear(b.x,b.y,6).length){say(`✕ bot B${b.id} crashed into an asteroid`);return 0}return 1});
+
 for(const c in S.col)tickCol(c,dt);for(const c in cache)for(const d of cache[c].dep)if(d.stock<d.max)d.stock=Math.min(d.max,d.stock+d.max*dt/1800);
 if(CF.beep&&S.mode=="fly"&&S.fuel>0&&S.fuel<=25){bp-=dt;if(bp<=0){beep();bp=.8}}
 mkT+=dt;if(mkT>8){mkT=0;mkStep()}if(S.mode=="dock"&&mkEl)animMk(dt);if(S.route){const p=S.ports[S.route.to];if(Math.hypot(S.x-p.x,S.y-p.y)<80)S.route=null}sa+=dt;if(sa>5){sa=0;save()}
@@ -146,7 +147,7 @@ function fbForm(u,t){try{let f=document.getElementById("whf");if(!f){f=document.
 async function post(t){const u=CF.hook;if(!okHook(u)){CF.st="that doesn't look like a Discord webhook link";return setUI()}try{const r=await fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:"drift",content:t})});CF.st=r.ok?"last send: ok":"discord replied "+r.status}catch(e){fbForm(u,t);CF.st="direct request blocked by the page · tried a fallback (can't confirm delivery)"}setUI()}
 setInterval(()=>{if(hq.length&&CF.hookOn&&okHook(CF.hook))post(hq.splice(0).join("\n").slice(0,1900))},3000);
 addEventListener("change",e=>{if(e.target.id=="whk"){CF.hook=e.target.value.trim();saveCF()}});
-const BUILD="2026-11-08d";
+const BUILD="2026-11-08f";
 function setUI(){const el=document.getElementById("set");el.className=CF.open?"on":"";if(!CF.open){el.innerHTML="";return}
 const tg=(c,l)=>`<div class="opt"><span>${l}</span><button data-a="cf" data-c="${c}">${CF[c]?"on":"off"}</button></div>`,tabs=["general","audio","accessibility","advanced"],M=window.MUS;
 let b="";if(CF.tab==0)b=tg("beep","low-fuel warning beep")+tg("sweep","radar scanner sweep")+`<div class="opt"><small style="color:var(--dim)">build ${BUILD}</small></div>`;
@@ -175,16 +176,39 @@ let h=`<h3>industry${r>0?" · +$"+r.toFixed(1)+"/s":""}</h3>`+(ind&&ind.f?`<smal
 h+=BLD.map((b,k)=>{const built=has(code,b.id),ok=!b.req||has(code,b.req),no=b.id=="mine"&&!p.dep.length;return `<div class="row" style="align-items:flex-start;margin:8px 0"><span style="flex:1"><span style="color:#fff">${b.n}</span><br><small style="color:var(--dim)">${no?"no deposits here":b.d}${!ok?" · needs "+BLD.find(z=>z.id==b.req).n:""}</small></span>${built?'<span style="color:#8fe9a6">built</span>':`<button data-a="bld" data-k="${k}" ${!ok||no||S.cash<b.c?"disabled":""}>$${b.c.toLocaleString()}</button>`}</div>`}).join("");
 return h+(S.col[code]?colUI(p):"")}
 function landTabs(p,h){const t=S.lt|0;return `<div class="tabs"><button data-a="ltab" data-k="0" class="${t?"":"on"}">surface</button><button data-a="ltab" data-k="1" class="${t?"on":""}">industry</button></div>`+(t?indUI(p)+'<button class="wide" data-a="launch">launch [L]</button>':h)}
+const LG=(()=>{const v=[-.5,-.55,.67],m=Math.hypot(...v);return v.map(a=>a/m)})();
+const v3s=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],v3c=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],v3d=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],v3n=a=>{const m=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/m,a[1]/m,a[2]/m]};
+function flush(F,R){for(const f of F)f.z=f.p.reduce((s,q)=>s+q[2],0)/f.p.length;F.sort((a,b)=>a.z-b.z);x.shadowBlur=0;
+for(const f of F){const cen=[0,1,2].map(i=>f.p.reduce((s,q)=>s+q[i],0)/f.p.length);let n=v3n(v3c(v3s(f.p[1],f.p[0]),v3s(f.p[2],f.p[0])));
+if(f.two){if(n[2]<0)n=[-n[0],-n[1],-n[2]]}else{if(f.c&&v3d(n,v3s(cen,f.c))<0)n=[-n[0],-n[1],-n[2]];if(n[2]<=.02)continue}
+if(cen[2]<0&&Math.hypot(cen[0],cen[1])<R*.97)continue;
+const k=f.em?1:.18+.82*Math.max(0,v3d(n,LG));
+x.beginPath();f.p.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();
+if(f.a!==0){x.shadowBlur=f.em?12:0;x.shadowColor=f.es||"#fff";x.fillStyle=`rgba(${f.col[0]*k|0},${f.col[1]*k|0},${f.col[2]*k|0},${f.a==null?1:f.a})`;x.fill()}
+if(f.e){x.shadowBlur=0;x.strokeStyle=f.e;x.lineWidth=.8;x.stroke()}}x.shadowBlur=0}
 function drawInd(p,px,py,R,t){const code=p.code,ind=S.ind[code]||{},mine=!!S.col[code];if(!mine&&!ind.sol&&!ind.ref&&!ind.ring&&!ind.dys)return;
-const rr=mulb(hash("i"+code)),L=n=>Array.from({length:n},()=>[rr()*6.283,(rr()-.5)*1.5]),cs=L(3),ss=L(4),G="#8fe9a6";
-const site=(lo,la)=>{const l=lo+rot,z=Math.cos(la)*Math.cos(l);return z>.1?{x:Math.cos(la)*Math.sin(l)*R,y:Math.sin(la)*R,z}:null};
-x.save();x.translate(px,py);x.lineCap="round";x.lineWidth=1.6;x.shadowColor="#fff";x.shadowBlur=10;
-if(mine)for(const[lo,la]of cs){const s=site(lo,la);if(!s)continue;const u=Math.max(4,R*.06)*s.z;x.strokeStyle="rgba(255,255,255,.95)";x.beginPath();x.arc(s.x,s.y,u,Math.PI,0);x.moveTo(s.x-u,s.y);x.lineTo(s.x+u,s.y);x.moveTo(s.x+u*1.7,s.y);x.lineTo(s.x+u*1.7,s.y-u*2.2);x.moveTo(s.x+u*1.3,s.y-u*2.2);x.lineTo(s.x+u*2.1,s.y-u*2.2);x.stroke()}
-if(ind.sol){x.strokeStyle=G;x.shadowColor=G;for(const[lo,la]of ss){const s=site(lo,la);if(!s)continue;const u=Math.max(3,R*.045)*s.z;x.globalAlpha=.5+.5*s.z;for(let a=0;a<3;a++)for(let b=0;b<2;b++)x.strokeRect(s.x+(a-1.5)*u*1.3,s.y+(b-1)*u*.9,u*1.1,u*.75);x.globalAlpha=1}}
-if(ind.ref){x.strokeStyle="#fff";x.shadowColor="#fff";for(let k=0;k<2;k++){const a=t*(.5+k*.2)+k*3,sx=Math.cos(a)*R*1.45,sy=Math.sin(a)*R*.5,u=R*.06;x.strokeRect(sx-u,sy-u,u*2,u*2);x.beginPath();x.moveTo(sx-u*2,sy);x.lineTo(sx+u*2,sy);x.moveTo(sx,sy-u);x.lineTo(sx,sy+u);x.stroke();if(Math.sin(a)>0){x.save();x.setLineDash([3,5]);x.globalAlpha=.5;x.beginPath();x.moveTo(sx,sy);x.lineTo(sx*.6,sy*.6+R*.3);x.stroke();x.restore()}}}
-if(ind.ring){x.save();x.rotate(p.tilt+.35);x.scale(1,.2);x.strokeStyle=G;x.shadowColor=G;x.shadowBlur=18;x.lineWidth=R*.05;x.globalAlpha=.55;x.beginPath();x.arc(0,0,R*1.62,0,7);x.stroke();x.globalAlpha=1;x.lineWidth=R*.07;x.beginPath();x.arc(0,0,R*1.62,t*.9,t*.9+.7);x.stroke();x.restore()}
-if(ind.dys){const D=R*1.32,Y="#ffe9a8";x.strokeStyle=Y;x.shadowColor=Y;x.shadowBlur=14;x.lineWidth=1.2;x.globalAlpha=.7;for(let k=0;k<6;k++){const a=k*Math.PI/6+t*.2;x.beginPath();x.ellipse(0,0,Math.max(.5,D*Math.abs(Math.cos(a))),D,0,0,7);x.stroke()}for(const la of[-.9,-.5,0,.5,.9]){const rx=D*Math.cos(la);x.beginPath();x.ellipse(0,D*Math.sin(la),Math.max(.5,rx),rx*.18,0,0,7);x.stroke()}x.globalAlpha=1}
-x.restore()}
+const rr=mulb(hash("i"+code)),Ls=n=>Array.from({length:n},()=>[rr()*6.283,(rr()-.5)*1.5]),cs=Ls(3),ss=Ls(4),F=[],u=R*.05,G="rgba(143,233,166,.9)",EG="rgba(255,255,255,.2)";
+const frame=(lo,la)=>{const l=lo+rot,n=[Math.cos(la)*Math.sin(l),Math.sin(la),Math.cos(la)*Math.cos(l)],e=[Math.cos(l),0,-Math.sin(l)],tt=[-Math.sin(la)*Math.sin(l),Math.cos(la),-Math.sin(la)*Math.cos(l)];return{n,W:(a,b,h)=>[n[0]*(R+h)+e[0]*a+tt[0]*b,n[1]*(R+h)+e[1]*a+tt[1]*b,n[2]*(R+h)+e[2]*a+tt[2]*b]}};
+const box=(W,a0,b0,w,d,h,col)=>{const cen=W(a0,b0,h/2),V=(i,j,k)=>W(a0+(i-.5)*w,b0+(j-.5)*d,k*h),q=ids=>F.push({p:ids.map(([i,j,k])=>V(i,j,k)),c:cen,col,e:EG});
+q([[0,0,1],[1,0,1],[1,1,1],[0,1,1]]);q([[0,0,0],[1,0,0],[1,0,1],[0,0,1]]);q([[1,0,0],[1,1,0],[1,1,1],[1,0,1]]);q([[1,1,0],[0,1,0],[0,1,1],[1,1,1]]);q([[0,1,0],[0,0,0],[0,0,1],[0,1,1]])};
+const cyl=(W,a0,b0,r,h,col)=>{const cen=W(a0,b0,h/2),S8=8,P=(th,k)=>W(a0+Math.cos(th)*r,b0+Math.sin(th)*r,k*h);for(let i=0;i<S8;i++){const a=i/S8*6.283,b=(i+1)/S8*6.283;F.push({p:[P(a,0),P(b,0),P(b,1),P(a,1)],c:cen,col})}F.push({p:Array.from({length:S8},(_,i)=>P(i/S8*6.283,1)),c:cen,col,e:EG})};
+const dome=(W,a0,b0,r,col)=>{const cen=W(a0,b0,0),P=(ph,th)=>W(a0+Math.cos(ph)*Math.cos(th)*r,b0+Math.cos(ph)*Math.sin(th)*r,Math.sin(ph)*r);for(let k=0;k<3;k++)for(let i=0;i<8;i++){const p0=k*Math.PI/6,p1=(k+1)*Math.PI/6,a=i/8*6.283,b=(i+1)/8*6.283;F.push({p:[P(p0,a),P(p0,b),P(p1,b),P(p1,a)],c:cen,col,e:"rgba(255,255,255,.14)"})}};
+const lt=(W,a,b,hh)=>F.push({p:[W(a-.14*u,b-.14*u,hh),W(a+.14*u,b-.14*u,hh),W(a+.14*u,b+.14*u,hh),W(a-.14*u,b+.14*u,hh)],col:[255,240,190],em:1,two:1,es:"#ffe9b0"});
+x.save();x.translate(px,py);x.lineCap="round";
+if(mine)for(const[lo,la]of cs){const fr=frame(lo,la);if(fr.n[2]<-.15)continue;const W=fr.W,night=v3d(fr.n,LG)<.25;
+dome(W,0,0,1.5*u,[215,225,240]);box(W,2.9*u,-.4*u,1.8*u,1.3*u,u,[150,160,178]);box(W,-2.8*u,.6*u,1.6*u,1.2*u,.9*u,[150,160,178]);cyl(W,.3*u,2.8*u,.28*u,2.8*u,[185,190,200]);
+if(night){lt(W,2.5*u,-.4*u,1.04*u);lt(W,3.2*u,-.4*u,1.04*u);lt(W,-2.8*u,.6*u,.94*u);lt(W,.3*u,2.8*u,2.84*u)}}
+if(ind.sol)for(const[lo,la]of ss){const fr=frame(lo,la);if(fr.n[2]<-.15)continue;const W=fr.W;for(let i=0;i<3;i++)for(let j=0;j<2;j++){const a=(i-1)*1.5*u,b=(j-.5)*1.15*u,w=.65*u,d=.5*u;F.push({p:[W(a-w,b-d,.25*u),W(a+w,b-d,.25*u),W(a+w,b+d,.7*u),W(a-w,b+d,.7*u)],two:1,col:[60,130,120],e:G})}}
+if(ind.ref)for(let k=0;k<2;k++){const a=t*(.45+k*.15)+k*3.2,inc=.5+k*.5,r2=R*1.5,O=[Math.cos(a)*r2,Math.sin(a)*Math.sin(inc)*r2,Math.sin(a)*Math.cos(inc)*r2],W=(i,j,hh)=>[O[0]+i,O[1]+j,O[2]+hh],q=R*.01;
+if(O[2]>0){const d=v3n(O);x.save();x.setLineDash([3,5]);x.strokeStyle="rgba(255,255,255,.35)";x.beginPath();x.moveTo(O[0],O[1]);x.lineTo(d[0]*R,d[1]*R);x.stroke();x.restore()}
+box(W,0,0,.22*R,.08*R,.08*R,[205,210,222]);cyl(W,0,0,.035*R,.14*R,[170,180,195]);
+for(const sg of[-1,1])F.push({p:[W(sg*.13*R,-.08*R,.04*R),W(sg*.3*R,-.08*R,.04*R),W(sg*.3*R,.08*R,.04*R),W(sg*.13*R,.08*R,.04*R)],two:1,col:[70,110,170],e:G})}
+if(ind.ring){const tl=1.15+p.tilt*.3,ct=Math.cos(tl),st=Math.sin(tl),RR=R*1.6,tr=R*.045,N=64,Pt=(a,b)=>{const rad=RR+tr*Math.cos(b),q=[rad*Math.cos(a),tr*Math.sin(b),rad*Math.sin(a)];return[q[0],q[1]*ct-q[2]*st,q[1]*st+q[2]*ct]};
+for(let i=0;i<N;i++){const a0=i/N*6.283,a1=(i+1)/N*6.283;for(let j=0;j<6;j++){const b0=j/6*6.283,b1=(j+1)/6*6.283;F.push({p:[Pt(a0,b0),Pt(a1,b0),Pt(a1,b1),Pt(a0,b1)],two:1,col:j==0||j==5?[143,233,166]:[165,175,190]})}}
+for(let k=0;k<3;k++){const c=Pt(t*.9+k*2.1,0),s=tr*1.7;F.push({p:[[c[0]-s,c[1]-s,c[2]],[c[0]+s,c[1]-s,c[2]],[c[0]+s,c[1]+s,c[2]],[c[0]-s,c[1]+s,c[2]]],col:[190,255,210],em:1,two:1,es:"#8fe9a6"})}}
+if(ind.dys){const D=R*1.32,NL=6,NM=12,P=(la,lo)=>[D*Math.cos(la)*Math.sin(lo+t*.2),D*Math.sin(la),D*Math.cos(la)*Math.cos(lo+t*.2)];
+for(let i=0;i<NL;i++){const la0=-1.35+i*2.7/NL,la1=la0+2.7/NL;for(let j=0;j<NM;j++){const lo0=j/NM*6.283,lo1=(j+1)/NM*6.283;F.push({p:[P(la0,lo0),P(la0,lo1),P(la1,lo1),P(la1,lo0)],two:1,col:[255,215,130],a:(i+j)%2?.4:0,e:"rgba(255,226,160,.75)"})}}}
+flush(F,R);x.restore()}
 const K={};addEventListener("keydown",e=>{if(e.target.tagName=="INPUT")return;const k=e.key.toLowerCase();if(k.startsWith("arrow")||k==" ")e.preventDefault();if(!K[k]&&!e.repeat){if(k=="l")lKey();if(k=="t")tow();if(k=="z")RANGE=Math.min(5000,RANGE*1.25);if(k=="x")RANGE=Math.max(900,RANGE/1.25);if(k=="e")fire()}K[k]=1});addEventListener("keyup",e=>K[e.key.toLowerCase()]=0);addEventListener("blur",()=>{for(const k in K)K[k]=0});
 const spd=()=>Math.hypot(S.vx,S.vy),nearP=()=>{let b=null,bd=1e9;for(const c of visible()){const d=Math.hypot(c.x-S.x,c.y-S.y);if(d<bd){bd=d;b=c}}return b&&{c:b,d:bd,p:pl(b.code)}};
 const nP=(px=S.x,py=S.y)=>{let b=S.ports[0],d=1e9;for(const p of S.ports){const e=Math.hypot(p.x-px,p.y-py);if(e<d){d=e;b=p}}return b},portD=()=>{const p=nP();return Math.hypot(S.x-p.x,S.y-p.y)},total=()=>S.inv.reduce((a,q,i)=>a+q*EL[i][1],0);
