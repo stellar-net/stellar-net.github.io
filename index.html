@@ -232,7 +232,7 @@ if(a=="settings"){CF.open=1;setUI()}
 if(a=="setclose"){CF.open=0;setUI()}
 if(a=="stab"){CF.tab=k;setUI()}
 if(a=="cf"){const c=b.dataset.c;CF[c]=CF[c]?0:1;saveCF();applyCF();setUI()}
-if(a=="whtest")post("drift · webhook test");if(a=="mmute"){MUS.mute();setUI()}if(a=="trname"){MUS.rename(k);setUI()}if(a=="trreset"){MUS.setSpeed(k,1);setUI()}
+if(a=="whtest")post("stellar-net · webhook test");if(a=="mmute"){MUS.mute();setUI()}if(a=="trname"){MUS.rename(k);setUI()}if(a=="trreset"){MUS.setSpeed(k,1);setUI()}
 if(a=="guide")guide();if(a=="unguide")S.route=null;if(a=="setcode")setCode();
 if(a=="bport"&&S.mode=="fly"&&S.cash>=50000){S.cash-=50000;S.ports.push({x:S.x,y:S.y});say("port constructed \u00b7 new dock online")}
 if(a=="reset"){if(S.rs){nosave=1;try{localStorage.removeItem("drift1")}catch(e){}return location.reload()}S.rs=1;return say("press reset save again to wipe all progress")}
