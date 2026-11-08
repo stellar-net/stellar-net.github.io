@@ -298,11 +298,10 @@ requestAnimationFrame(frame)}
 try{const d=JSON.parse(localStorage.getItem("drift1")||"null");if(d){Object.assign(S,{cash:d.cash,fuel:d.fuel,inv:d.inv,x:d.x,y:d.y,a:d.a,col:d.col||{},bots:d.bots||[],depl:d.depl||{},seen:d.seen||{},nb:d.nb||0,ports:d.ports||[{x:0,y:0}],names:d.names||{},ind:d.ind||{}});if(!d.ports){S.seen={};S.col={};S.bots=[];S.x=0;S.y=300;S.vx=S.vy=0}say(d.ports?"save loaded":"the map was rebuilt into star systems \u00b7 old routes cleared");{const off=Math.min(43200,(Date.now()-d.t)/1000);for(const c in S.depl){const p=pl(c);p.dep.forEach(z=>z.stock=Math.min(z.max,z.stock+z.max*off/1800))}}away((Date.now()-d.t)/1000,1)}else say("systems online · fly to a planet, mine, and return to port")}catch(e){}
 hud();requestAnimationFrame(frame);
 </script><script>
-/* ---- SOUNDTRACK: edit this list. n = name shown in the game, f = path to the mp3 file in your repo ---- */
 const TRK=[
- {n:"Track 1",f:"music/Track1.mp3"},
- {n:"Track 2",f:"music/Track2.mp3"},
- {n:"Track 3",f:"music/Track3.mp3"}
+ {n:"XTAL",f:"music/Track1.mp3"},
+ {n:"HEAVEN'S NIGHT",f:"music/Track2.mp3"},
+ {n:"THE REVERSE WILL",f:"music/Track3.mp3"}
 ];
 (()=>{const mus=document.getElementById("mus");let i=0,paused=false,started=false,vol=.5,muted=false,names={},spd={};const au=new Audio();au.preload="metadata";
 try{const s=JSON.parse(localStorage.getItem("driftmus")||"{}");if(s.v!=null)vol=s.v;muted=!!s.m;paused=!!s.p;names=JSON.parse(localStorage.getItem("drifttn")||"{}");spd=JSON.parse(localStorage.getItem("driftspd")||"{}")}catch(e){}
